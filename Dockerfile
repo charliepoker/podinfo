@@ -35,12 +35,13 @@ RUN addgroup -S app \
 
 WORKDIR /home/app
 
-# --- TEMPORARY: known-vulnerable deps to prove the Trivy gate. Remove after the screenshot. ---
-COPY vuln-test/requirements.txt /tmp/requirements.txt
-
 COPY --from=builder /podinfo/bin/podinfo .
 COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
 COPY ./ui ./ui
+
+# --- TEMPORARY: known-vulnerable npm lockfile to prove the Trivy gate. Remove after the screenshot. ---
+COPY vuln-test/package-lock.json /home/app/package-lock.json
+
 RUN chown -R app:app ./
 
 USER app
