@@ -1,26 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
-
-ARG REVISION
-ARG TARGETOS
-ARG TARGETARCH
-
-RUN mkdir -p /podinfo/
-
-WORKDIR /podinfo
-
-COPY . .
-
-RUN go mod download
-
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
-    -a -o bin/podinfo cmd/podinfo/*
-
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
-    -a -o bin/podcli cmd/podcli/*
-
-FROM alpine:3.23
+FROM ubuntu:20.04
 
 ARG BUILD_DATE
 ARG VERSION
@@ -28,10 +6,11 @@ ARG REVISION
 
 LABEL maintainer="stefanprodan"
 
-RUN addgroup -S app \
-    && adduser -S -G app app \
-    && apk --no-cache add \
-    ca-certificates curl netcat-openbsd
+RUN groupadd -r app \
+    && useradd -r -g app app \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/app
 
