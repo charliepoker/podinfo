@@ -21,6 +21,14 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
+# --- TEMPORARY: build a tiny binary that imports a known-vulnerable Go module
+#     (jwt-go v3.2.0 -> CVE-2020-26160, HIGH) to prove the Trivy gate. Remove after the screenshot. ---
+RUN mkdir -p /vulnapp && cd /vulnapp \
+    && printf 'package main\nimport _ "github.com/dgrijalva/jwt-go"\nfunc main() {}\n' > main.go \
+    && go mod init vulnapp \
+    && go get github.com/dgrijalva/jwt-go@v3.2.0 \
+    && CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /vulnapp/vulnbin .
+
 FROM alpine:3.23
 
 ARG BUILD_DATE
@@ -40,22 +48,8 @@ COPY --from=builder /podinfo/bin/podinfo .
 COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
 COPY ./ui ./ui
 
-# --- TEMPORARY: inline known-vulnerable npm lockfile to prove the Trivy gate. Remove after the screenshot. ---
-COPY <<'LOCKFILE' /home/app/package-lock.json
-{
-  "name": "vuln-test",
-  "version": "1.0.0",
-  "lockfileVersion": 1,
-  "requires": true,
-  "dependencies": {
-    "lodash": {
-      "version": "4.17.4",
-      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz",
-      "integrity": "sha1-eCA6TRwyiuHYbcpkYONptX9AVa4="
-    }
-  }
-}
-LOCKFILE
+# --- TEMPORARY: vulnerable test binary. Remove after the screenshot. ---
+COPY --from=builder /vulnapp/vulnbin /usr/local/bin/vulnbin
 
 RUN chown -R app:app ./
 
