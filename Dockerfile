@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 ARG REVISION
@@ -39,8 +40,22 @@ COPY --from=builder /podinfo/bin/podinfo .
 COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
 COPY ./ui ./ui
 
-# --- TEMPORARY: known-vulnerable npm lockfile to prove the Trivy gate. Remove after the screenshot. ---
-COPY vuln-test/package-lock.json /home/app/package-lock.json
+# --- TEMPORARY: inline known-vulnerable npm lockfile to prove the Trivy gate. Remove after the screenshot. ---
+COPY <<'LOCKFILE' /home/app/package-lock.json
+{
+  "name": "vuln-test",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "lodash": {
+      "version": "4.17.4",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz",
+      "integrity": "sha1-eCA6TRwyiuHYbcpkYONptX9AVa4="
+    }
+  }
+}
+LOCKFILE
 
 RUN chown -R app:app ./
 
