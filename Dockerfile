@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM ubuntu:20.04
+FROM alpine:3.23
 
 ARG BUILD_DATE
 ARG VERSION
@@ -28,11 +28,10 @@ ARG REVISION
 
 LABEL maintainer="stefanprodan"
 
-RUN groupadd -r app \
-    && useradd -r -g app app \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+RUN addgroup -S app \
+    && adduser -S -G app app \
+    && apk --no-cache add \
+    ca-certificates curl netcat-openbsd
 
 WORKDIR /home/app
 
