@@ -1,6 +1,8 @@
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 ARG REVISION
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN mkdir -p /podinfo/
 
@@ -10,11 +12,11 @@ COPY . .
 
 RUN go mod download
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podinfo cmd/podinfo/*
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
